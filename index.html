@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio da Revelação - João Miguel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lucky+Guy&family=Quicksand:wght@500;700&display=swap');
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Quicksand', sans-serif;
+            background: #fdfbfb;
+            transition: background 1.5s ease-in-out;
+        }
+
+        #game-ui {
+            position: fixed;
+            top: 20px; width: 100%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .score-board {
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-size: 20px;
+            color: #555;
+            display: inline-block;
+        }
+
+        #target-info {
+            color: #999;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .balloon {
+            position: absolute;
+            bottom: -150px;
+            width: 70px;
+            height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: inset -8px -8px 12px rgba(0,0,0,0.1);
+            animation: drift 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift {
+            from { transform: translateX(-5px); }
+            to { transform: translateX(5px); }
+        }
+
+        /* Cores dos Balões */
+        .white { background: #ffffff; border: 1px solid #eee; }
+        .green { background: #a8e6cf; }
+        .purple { background: #dcedc1; }
+        .lilac { background: #e0bbe4; }
+        .gray { background: #d1d8e0; }
+        .yellow { background: #fff9ae; }
+        .blue { background: #81ecec; }
+
+        /* Telas de Transição */
+        #overlay-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: white;
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        #countdown-timer {
+            font-family: 'Lucky Guy', cursive;
+            font-size: 120px;
+            color: #3498db;
+        }
+
+        /* Revelação Final */
+        #final-reveal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #2980b9; /* Azul predominante */
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            z-index: 200;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: slideUp 1.5s forwards;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .name-title { font-size: 4rem; text-shadow: 4px 4px 0px rgba(0,0,0,0.1); margin: 10px; }
+        .meaning-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; width: 80%; max-width: 500px; }
+        
+        .confetti {
+            position: absolute; width: 10px; height: 10px;
+            animation: fall 3s infinite linear;
+        }
+
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="game-ui">
+        <div class="score-board">🎈 Balões Estourados: <span id="score">0</span> / 10</div>
+        <div id="target-info">Estoure 10 balões para a grande revelação!</div>
+    </div>
+    
+    <div id="game-container"></div>
+
+    <div id="overlay-screen">
+        <h2 style="color: #555;">Parabéns! Você conseguiu! 🎉</h2>
+        <p style="font-size: 1.2rem; color: #777;">Preparem o coração... a revelação vem em:</p>
+        <div id="countdown-timer">10</div>
+    </div>
+
+    <div id="final-reveal">
+        <h3 style="font-size: 2rem;">É UM MENINO!</h3>
+        <h1 class="name-title">João Miguel</h1>
+        <div class="meaning-box">
+            <p><strong>João:</strong> Cheio da graça do Senhor</p>
+            <p><strong>Miguel:</strong> Quem como Deus? Ninguém!</p>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 15px 0;">
+            <p><em>"Aquele que recebe a graça de Deus"</em></p>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const overlay = document.getElementById('overlay-screen');
+        const countdownDisplay = document.getElementById('countdown-timer');
+        const finalReveal = document.getElementById('final-reveal');
+        
+        let score = 0;
+        let gameActive = true;
+        const colors = ['green', 'purple', 'lilac', 'gray', 'yellow', 'blue', 'white'];
+
+        function createBalloon() {
+            if (!gameActive) return;
+
+            const balloon = document.createElement('div');
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            balloon.className = `balloon ${color}`;
+            balloon.style.left = Math.random() * (window.innerWidth - 80) + 'px';
+            
+            const duration = Math.random() * 3 + 4;
+            balloon.style.transition = `bottom ${duration}s linear`;
+
+            container.appendChild(balloon);
+
+            setTimeout(() => { balloon.style.bottom = '110vh'; }, 50);
+
+            const pop = (e) => {
+                if (!gameActive) return;
+                
+                // Feedback visual de estouro
+                balloon.style.transform = 'scale(1.5)';
+                balloon.style.opacity = '0';
+                
+                // Agora qualquer cor soma ponto!
+                score++;
+                scoreDisplay.innerText = score;
+                
+                if (score === 10) startCountdown();
+
+                setTimeout(() => balloon.remove(), 200);
+            };
+
+            balloon.addEventListener('mousedown', pop);
+            balloon.addEventListener('touchstart', (e) => { e.preventDefault(); pop(); });
+
+            setTimeout(() => { if (balloon.parentNode) balloon.remove(); }, duration * 1000);
+        }
+
+        function startCountdown() {
+            gameActive = false;
+            container.innerHTML = '';
+            
+            setTimeout(() => {
+                overlay.style.display = 'flex';
+                let timeLeft = 10;
+                
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    countdownDisplay.innerText = timeLeft;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        showFinalReveal();
+                    }
+                }, 1000);
+            }, 500);
+        }
+
+        function showFinalReveal() {
+            overlay.style.display = 'none';
+            finalReveal.style.display = 'flex';
+            createConfetti();
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                confetti.style.backgroundColor = ['#fff', '#81ecec', '#74b9ff', '#a29bfe'][Math.floor(Math.random() * 4)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.borderRadius = '2px';
+                document.body.appendChild(confetti);
+            }
+        }
+
+        setInterval(createBalloon, 700);
+    </script>
+</body>
+</html>
